@@ -188,6 +188,10 @@ func (l *LifecycleExecution) Create(ctx context.Context, publish bool, dockerHos
 		flags = append(flags, "-gid", strconv.Itoa(l.opts.GID))
 	}
 
+	if l.opts.PreviousImage != "" {
+		flags = append(flags, "-previous-image", l.opts.PreviousImage)
+	}
+
 	processType := determineDefaultProcessType(l.platformAPI, l.opts.DefaultProcessType)
 	if processType != "" {
 		flags = append(flags, "-process-type", processType)
@@ -322,6 +326,10 @@ func (l *LifecycleExecution) newAnalyze(repoName, networkMode string, publish bo
 		flagsOpt = WithFlags("-gid", strconv.Itoa(l.opts.GID))
 	}
 
+	if l.opts.PreviousImage != "" {
+		l.opts.LifecycleImage = l.opts.PreviousImage
+	}
+
 	if publish {
 		authConfig, err := auth.BuildEnvVar(authn.DefaultKeychain, repoName)
 		if err != nil {
@@ -390,7 +398,8 @@ func (l *LifecycleExecution) Build(ctx context.Context, networkMode string, volu
 }
 
 func determineDefaultProcessType(platformAPI *api.Version, providedValue string) string {
-	shouldSetForceDefault := platformAPI.Compare(api.MustParse("0.4")) >= 0
+	shouldSetForceDefault := platformAPI.Compare(api.MustParse("0.4")) >= 0 &&
+		platformAPI.Compare(api.MustParse("0.6")) < 0
 	if providedValue == "" && shouldSetForceDefault {
 		return defaultProcessType
 	}
